@@ -6,8 +6,11 @@ import io.vertx.ext.web.client.WebClient
 import io.vertx.ext.web.codec.BodyCodec
 import com.typesafe.scalalogging.StrictLogging
 import io.vertx.core.buffer.Buffer
+import scalaz.\/-
 import scalaz.concurrent.Task
 import scalaz.syntax.either._
+
+import scala.concurrent.ExecutionContext
 
 class HttpClient extends StrictLogging {
   private val vertx = Vertx.vertx()
@@ -15,7 +18,7 @@ class HttpClient extends StrictLogging {
 
   def forwardRequestTask(body: String): Task[String] = {
     logger.info("HttpClient.forwardRequest")
-    Task.async { callback =>
+    Task.async[String] { callback =>
       logger.info("HttpClient.forwardRequest.async")
       client.postAbs("https://httpbin.org/anything")
         .putHeader("Content-Type", "application/json")
@@ -23,18 +26,28 @@ class HttpClient extends StrictLogging {
         .sendBuffer(Buffer.buffer(body))
         .onSuccess { response =>
           logger.info("HttpClient.forwardRequest.async.sendBuffer.onSuccess")
+          Thread.sleep(100)
           callback(response.body().right)
         }
         .onFailure { exception =>
           logger.error("Failed to forward request", exception)
           callback(exception.left)
         }
+    }.flatMap { str: String =>
+      logger.info("HttpClient.forwardRequestTask.flatMap")
+      Thread.sleep(100)
+
+      Task.async[String]{callback =>
+        Thread.sleep(100)
+        logger.info("HttpClient.forwardRequestTask.async")
+        callback(\/-(str))
+      }
     }
   }
 
   def forwardRequestIO(body: String): IO[String] = {
     logger.info("HttpClient.forwardRequest")
-    IO.async_ { callback =>
+    IO.async_[String] { callback =>
       logger.info("HttpClient.forwardRequest.async")
       client.postAbs("https://httpbin.org/anything")
         .putHeader("Content-Type", "application/json")
@@ -49,6 +62,6 @@ class HttpClient extends StrictLogging {
           callback(Left(exception))
         }
     }
-  }
+  }.evalOn(ExecutionContext.parasitic)
 
 }
