@@ -1,16 +1,14 @@
 package com.threadshifting
 
 import cats.effect.IO
+import com.typesafe.scalalogging.StrictLogging
 import io.vertx.core.Vertx
+import io.vertx.core.buffer.Buffer
 import io.vertx.ext.web.client.WebClient
 import io.vertx.ext.web.codec.BodyCodec
-import com.typesafe.scalalogging.StrictLogging
-import io.vertx.core.buffer.Buffer
 import scalaz.\/-
 import scalaz.concurrent.Task
 import scalaz.syntax.either._
-
-import scala.concurrent.ExecutionContext
 
 class HttpClient extends StrictLogging {
   private val vertx = Vertx.vertx()
@@ -37,7 +35,7 @@ class HttpClient extends StrictLogging {
       logger.info("HttpClient.forwardRequestTask.flatMap")
       Thread.sleep(100)
 
-      Task.async[String]{callback =>
+      Task.async[String] { callback =>
         Thread.sleep(100)
         logger.info("HttpClient.forwardRequestTask.async")
         callback(\/-(str))
@@ -62,6 +60,5 @@ class HttpClient extends StrictLogging {
           callback(Left(exception))
         }
     }
-  }.evalOn(ExecutionContext.parasitic)
-
+  }
 }
