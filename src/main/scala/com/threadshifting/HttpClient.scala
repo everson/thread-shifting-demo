@@ -61,4 +61,21 @@ class HttpClient extends StrictLogging {
         }
     }
   }
+
+  def forwardRequestShim(body: String): FutureWrapper[String] = {
+    logger.info("HttpClient.forwardRequest")
+
+    FutureWrapper.fromVertxFuture {
+      logger.info("HttpClient.forwardRequest.fromVertxFuture")
+      client.postAbs("https://httpbin.org/anything")
+        .putHeader("Content-Type", "application/json")
+        .as(BodyCodec.string())
+        .sendBuffer(Buffer.buffer(body))
+    }.map { x => {
+      logger.info("HttpClient.forwardRequest.map")
+      x.body()
+    }
+    }
+
+  }
 }

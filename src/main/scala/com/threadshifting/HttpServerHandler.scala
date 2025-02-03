@@ -17,6 +17,8 @@ class HttpServerHandler(client: HttpClient) extends SimpleChannelInboundHandler[
       handleScalazTask(body, ctx)
     } else if (uri == "/cats-io") {
       handleCatsIO(body, ctx)
+    } else if (uri == "/shim") {
+      handleShim(body, ctx)
     } else {
       val httpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
       ctx.writeAndFlush(httpResponse)
@@ -43,6 +45,19 @@ class HttpServerHandler(client: HttpClient) extends SimpleChannelInboundHandler[
         writeResponse(ctx, response)
 
       case Left(exception) => handleError(exception, ctx)
+    }
+  }
+
+  private def handleShim(requestBody: String, ctx: ChannelHandlerContext): Unit = {
+    logger.info("handleShim")
+    client.forwardRequestShim(requestBody).onComplete {
+      case Right(response) =>
+        logger.info("handleShim.onComplete")
+        writeResponse(ctx, response)
+
+      case Left(exception) =>
+        logger.info("handleShim.exception")
+        handleError(exception, ctx)
     }
   }
 
